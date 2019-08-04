@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">AllCast</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="choose_source_app">Выберите приложения - источники:</string>
+    <string name="understand">Понял</string>
+    <string name="telegram">Telegram</string>
+    <string name="we_will_add_later">Добавим позже</string>
+    <string name="allcast">ALLCAST</string>
+    <string name="telegram_hint">Сейчас откроется приложение Telegram. Выделите небоходимые посты
+        из одного канала и нажмите кнопку "скопировать", затем откройте AllCast заново.
+        <b>У вас должно быть установлено приложение Telegram.</b></string>
+    <string name="error_happened">Произошла ошибка</string>
+
+</resources>
