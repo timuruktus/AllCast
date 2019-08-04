@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/prepareFragment"
-        android:name="trelico.ru.allcast.screens.prepare.PrepareFragment"
+        android:name="trelico.ru.allcast.screens.prepare.ChooseFragment"
         android:label="fragment_prepare"
-        tools:layout="@layout/fragment_prepare" />
+        tools:layout="@layout/fragment_choose" />
 </navigation>

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import trelico.ru.allcast.repositories.TTSRepo;
 
 @InjectViewState
-public class PreparePresenter extends MvpPresenter<IPrepareFragment> implements PrepareAPI,
+public class ChoosePresenter extends MvpPresenter<IChooseFragment> implements ChooseAPI,
         HintDialogListener{
 
     private static final int TEXT_LENGTH_LIMIT = 5000;
@@ -19,8 +19,8 @@ public class PreparePresenter extends MvpPresenter<IPrepareFragment> implements 
 
 
     @Override
-    public PrepareFragment getInstance(){
-        return PrepareFragment.getInstance();
+    public ChooseFragment getInstance(){
+        return ChooseFragment.getInstance();
     }
 
     @Override

@@ -8,6 +8,8 @@ import trelico.ru.allcast.utils.AndroidUtils;
 @Entity
 public class TTSDatabaseEntity{
 
+    //TODO: ADD LINK
+
     private String text;
     @PrimaryKey
     private String hash;

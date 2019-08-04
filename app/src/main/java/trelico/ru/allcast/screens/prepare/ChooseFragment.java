@@ -17,6 +17,7 @@ import com.arellomobile.mvp.presenter.InjectPresenter;
 
 import butterknife.BindString;
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import butterknife.OnClick;
 import trelico.ru.allcast.MyApp;
 import trelico.ru.allcast.R;
@@ -24,7 +25,7 @@ import trelico.ru.allcast.screens.main.MainActivity;
 import trelico.ru.allcast.utils.AndroidUtils;
 
 
-class PrepareFragment extends MvpAppCompatFragment implements IPrepareFragment{
+class ChooseFragment extends MvpAppCompatFragment implements IChooseFragment{
 
     @BindView(R.id.chooseSourcesApp)
     TextView chooseSourcesApp;
@@ -40,18 +41,18 @@ class PrepareFragment extends MvpAppCompatFragment implements IPrepareFragment{
     String errorHappened;
 
     @InjectPresenter
-    PreparePresenter preparePresenter;
+    ChoosePresenter preparePresenter;
     private String telegramHintTag = "telegram";
     private ClipboardManager clipboard;
     private ClipboardManager.OnPrimaryClipChangedListener clipboardListener;
     protected static final String TELEGRAM_URI = "org.telegram.messenger";
 
-    PrepareFragment(){
+    public ChooseFragment(){
         // Required empty public constructor
     }
 
-    protected static PrepareFragment getInstance(){
-        return new PrepareFragment();
+    protected static ChooseFragment getInstance(){
+        return new ChooseFragment();
     }
 
 
@@ -59,8 +60,10 @@ class PrepareFragment extends MvpAppCompatFragment implements IPrepareFragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState){
         clipboard = (ClipboardManager) MyApp.INSTANCE.getSystemService(Context.CLIPBOARD_SERVICE);
+        View view = inflater.inflate(R.layout.fragment_choose, container, false);
+        ButterKnife.bind(view);
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_prepare, container, false);
+        return view;
     }
 
     @OnClick(R.id.telegram)

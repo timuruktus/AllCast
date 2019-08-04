@@ -13,5 +13,9 @@
         из одного канала и нажмите кнопку "скопировать", затем откройте AllCast заново.
         <b>У вас должно быть установлено приложение Telegram.</b></string>
     <string name="error_happened">Произошла ошибка</string>
+    <string name="next">Следующий</string>
+    <string name="play">Играть</string>
+    <string name="pause">Приостановить</string>
+    <string name="previous">Предыдущий</string>
 
 </resources>
