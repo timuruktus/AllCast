@@ -9,7 +9,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.BitmapFactory;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -44,13 +43,18 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 import trelico.ru.allcast.R;
-import trelico.ru.allcast.repositories.PlaylistRepo;
-import trelico.ru.allcast.screens.main.MainActivity;
+import trelico.ru.allcast.repositories.playlist.LastTrackException;
+import trelico.ru.allcast.repositories.playlist.PlaylistRepo;
+import trelico.ru.allcast.screens.audio_player.PlayerActivity;
+import trelico.ru.allcast.utils.MediaStyleHelper;
+
+import static android.media.AudioManager.AUDIOFOCUS_GAIN;
+import static android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
 
 final public class PlayerService extends Service{
 
     private final int NOTIFICATION_ID = 404;
-    private final String NOTIFICATION_DEFAULT_CHANNEL_ID = "default_channel";
+    public static final String NOTIFICATION_DEFAULT_CHANNEL_ID = "default_channel";
 
     private final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
@@ -73,7 +77,9 @@ final public class PlayerService extends Service{
     private ExtractorsFactory extractorsFactory;
     private DataSource.Factory dataSourceFactory;
 
-    private final PlaylistRepo playlistRepo = new PlaylistRepo();
+    private  PlaylistRepo playlistRepo;
+
+    private static final boolean PAUSE_WHEN_DUCKED = true;
 
     @Override
     public void onCreate(){
@@ -92,10 +98,10 @@ final public class PlayerService extends Service{
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build();
-            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            audioFocusRequest = new AudioFocusRequest.Builder(AUDIOFOCUS_GAIN)
                     .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                    .setAcceptsDelayedFocusGain(false)
-                    .setWillPauseWhenDucked(true)
+                    .setAcceptsDelayedFocusGain(true)
+                    .setWillPauseWhenDucked(PAUSE_WHEN_DUCKED)
                     .setAudioAttributes(audioAttributes)
                     .build();
         }
@@ -109,17 +115,20 @@ final public class PlayerService extends Service{
 
         Context appContext = getApplicationContext();
 
-        Intent activityIntent = new Intent(appContext, MainActivity.class);
+        Intent activityIntent = new Intent(appContext, PlayerActivity.class);
         mediaSession.setSessionActivity(PendingIntent.getActivity(appContext, 0, activityIntent, 0));
 
-        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null, appContext, MediaButtonReceiver.class);
-        mediaSession.setMediaButtonReceiver(PendingIntent.getBroadcast(appContext, 0, mediaButtonIntent, 0));
+        Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null,
+                appContext, MediaButtonReceiver.class);
+        mediaSession.setMediaButtonReceiver(PendingIntent
+                .getBroadcast(appContext, 0, mediaButtonIntent, 0));
 
         exoPlayer = ExoPlayerFactory.newSimpleInstance(appContext,
                 new DefaultRenderersFactory(this),
                 new DefaultTrackSelector(),
                 new DefaultLoadControl());
         exoPlayer.addListener(exoPlayerListener);
+        exoPlayer.setPlayWhenReady(true);
         this.dataSourceFactory = new DefaultDataSourceFactory(appContext,
                 Util.getUserAgent(this, getString(R.string.app_name)));
         this.extractorsFactory = new DefaultExtractorsFactory();
@@ -139,7 +148,6 @@ final public class PlayerService extends Service{
     }
 
     private MediaSessionCompat.Callback mediaSessionCallback = new MediaSessionCompat.Callback(){
-
         private Uri currentUri;
         int currentState = PlaybackStateCompat.STATE_STOPPED;
 
@@ -148,7 +156,7 @@ final public class PlayerService extends Service{
             if(!exoPlayer.getPlayWhenReady()){
                 startService(new Intent(getApplicationContext(), PlayerService.class));
 
-                PlaylistRepo.Track track = playlistRepo.getCurrent();
+                PlaylistRepo.Track track = playlistRepo.getCurrentTrack();
                 updateMetadataFromTrack(track);
 
                 prepareToPlay(track.getUri());
@@ -161,7 +169,7 @@ final public class PlayerService extends Service{
                         audioFocusResult = audioManager.requestAudioFocus(audioFocusRequest);
                     } else{
                         audioFocusResult = audioManager.requestAudioFocus(audioFocusChangeListener,
-                                AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+                                AudioManager.STREAM_MUSIC, AUDIOFOCUS_GAIN);
                     }
                     if(audioFocusResult != AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
                         return;
@@ -175,8 +183,9 @@ final public class PlayerService extends Service{
                 exoPlayer.setPlayWhenReady(true);
             }
 
+            long currentPlayedTimeInMs = exoPlayer.getContentPosition();
             mediaSession.setPlaybackState(stateBuilder.setState(PlaybackStateCompat.STATE_PLAYING,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1).build());
+                    currentPlayedTimeInMs, 1).build());
             currentState = PlaybackStateCompat.STATE_PLAYING;
 
             refreshNotificationAndForegroundStatus(currentState);
@@ -189,8 +198,9 @@ final public class PlayerService extends Service{
                 unregisterReceiver(becomingNoisyReceiver);
             }
 
+            long currentPlayedTimeInMs = exoPlayer.getContentPosition();
             mediaSession.setPlaybackState(stateBuilder.setState(PlaybackStateCompat.STATE_PAUSED,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1).build());
+                    currentPlayedTimeInMs, 1).build());
             currentState = PlaybackStateCompat.STATE_PAUSED;
 
             refreshNotificationAndForegroundStatus(currentState);
@@ -214,9 +224,9 @@ final public class PlayerService extends Service{
             }
 
             mediaSession.setActive(false);
-
+            long currentPlayedTimeInMs = exoPlayer.getContentPosition();
             mediaSession.setPlaybackState(stateBuilder.setState(PlaybackStateCompat.STATE_STOPPED,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1).build());
+                    currentPlayedTimeInMs, 1).build());
             currentState = PlaybackStateCompat.STATE_STOPPED;
 
             refreshNotificationAndForegroundStatus(currentState);
@@ -226,17 +236,24 @@ final public class PlayerService extends Service{
 
         @Override
         public void onSkipToNext(){
-            PlaylistRepo.Track track = playlistRepo.getNext();
-            updateMetadataFromTrack(track);
+            PlaylistRepo.Track track;
+            try{
+                track = playlistRepo.getNextTrack();
 
-            refreshNotificationAndForegroundStatus(currentState);
+                updateMetadataFromTrack(track);
 
-            prepareToPlay(track.getUri());
+                refreshNotificationAndForegroundStatus(currentState);
+
+                prepareToPlay(track.getUri());
+            } catch(LastTrackException e){
+                e.printStackTrace();
+                onStop();
+            }
         }
 
         @Override
         public void onSkipToPrevious(){
-            PlaylistRepo.Track track = playlistRepo.getPrevious();
+            PlaylistRepo.Track track = playlistRepo.getPreviousTrack();
             updateMetadataFromTrack(track);
 
             refreshNotificationAndForegroundStatus(currentState);
@@ -265,11 +282,16 @@ final public class PlayerService extends Service{
 
     private AudioManager.OnAudioFocusChangeListener audioFocusChangeListener = focusChange -> {
         switch(focusChange){
-            case AudioManager.AUDIOFOCUS_GAIN:
-                mediaSessionCallback.onPlay(); // Не очень красиво
+            case AUDIOFOCUS_GAIN:
+                exoPlayer.setVolume(1f); //MAY BE A BUG
+                mediaSessionCallback.onPlay(); // Не очень красиво (вызов метода колбэка)
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 mediaSessionCallback.onPause();
+                break;
+            case AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK:
+                exoPlayer.setVolume(exoPlayer.getVolume() - 0.2f); //MAY BE A BUG
+                //TODO: lower sound
                 break;
             default:
                 mediaSessionCallback.onPause();
@@ -321,6 +343,10 @@ final public class PlayerService extends Service{
     }
 
     public class PlayerServiceBinder extends Binder{
+
+        public void setPlaylistRepo(PlaylistRepo playlistRepo){
+            PlayerService.this.playlistRepo = playlistRepo;
+        }
         public MediaSessionCompat.Token getMediaSessionToken(){
             return mediaSession.getSessionToken();
         }

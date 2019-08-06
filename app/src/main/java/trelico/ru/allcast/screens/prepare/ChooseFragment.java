@@ -43,6 +43,8 @@ class ChooseFragment extends MvpAppCompatFragment implements IChooseFragment{
     @InjectPresenter
     ChoosePresenter preparePresenter;
     private String telegramHintTag = "telegram";
+    private final static String TELEGRAM_TITLE = "Telegram";
+    private static String currentTitle;
     private ClipboardManager clipboard;
     private ClipboardManager.OnPrimaryClipChangedListener clipboardListener;
     protected static final String TELEGRAM_URI = "org.telegram.messenger";
@@ -70,15 +72,16 @@ class ChooseFragment extends MvpAppCompatFragment implements IChooseFragment{
     public void onTelegramClicked(){
         HintDialog.createDialog(telegramHint, understand, preparePresenter, TELEGRAM_URI)
                 .show(getChildFragmentManager(), telegramHintTag);
+        preparePresenter.setLaunchedAppTitle(TELEGRAM_TITLE);
     }
 
     @Override
     public void launchApp(String appUri){
         final boolean isAppInstalled = AndroidUtils.isAppAvailable(MyApp.INSTANCE, appUri);
         if(isAppInstalled){
-            Intent telegramIntent = new Intent(Intent.ACTION_MAIN);
-            telegramIntent.setPackage(appUri);
-            startActivity(telegramIntent);
+            Intent appIntent = new Intent(Intent.ACTION_MAIN);
+            appIntent.setPackage(appUri);
+            startActivity(appIntent);
         } else{
             Toast.makeText(getContext(), "App is not Installed", Toast.LENGTH_SHORT).show();
         }

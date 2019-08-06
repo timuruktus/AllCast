@@ -10,11 +10,18 @@ public class TTSDatabaseEntity{
 
     //TODO: ADD LINK
 
+    private String link;
     private String text;
     @PrimaryKey
     private String hash;
 
     public TTSDatabaseEntity(String text, String hash){
+        this.text = text;
+        this.hash = hash;
+    }
+
+    public TTSDatabaseEntity(String link, String text, String hash){
+        this.link = link;
         this.text = text;
         this.hash = hash;
     }
@@ -36,6 +43,14 @@ public class TTSDatabaseEntity{
 
     public void setHash(String hash){
         this.hash = hash;
+    }
+
+    public String getLink(){
+        return link;
+    }
+
+    public void setLink(String link){
+        this.link = link;
     }
 
     public String getAudioUri(){

@@ -21,6 +21,9 @@ public interface TTSDatabaseEntityDAO{
     @Query("SELECT * FROM TTSDatabaseEntity WHERE hash = :hash")
     Single<TTSDatabaseEntity> getByHash(String hash);
 
+    @Query("SELECT * FROM TTSDatabaseEntity WHERE link = :link")
+    Single<TTSDatabaseEntity> getByLink(String link);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(TTSDatabaseEntity ttsResponse);
 

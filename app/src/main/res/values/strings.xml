@@ -17,5 +17,8 @@
     <string name="play">Играть</string>
     <string name="pause">Приостановить</string>
     <string name="previous">Предыдущий</string>
+    <string name="title_activity_player">PlayerActivity</string>
+    <string name="podcast_text">Текст подкаста</string>
+    <string name="podcast_description">Описание подкаста</string>
 
 </resources>

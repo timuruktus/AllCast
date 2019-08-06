@@ -32,18 +32,16 @@ public class TTSRepo{
         return instance;
     }
 
-    public Single<String> getSpeechUriFromText(String text){
+    public Single<String> getSpeechUriFromText(String text, String link){
         String textHash = HashUtils.getHash(text);
         return databaseEntityDAO.getByHash(textHash)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .flatMap(ttsDatabaseEntity -> {
                     if(ttsDatabaseEntity != null){
                         return Single.just(ttsDatabaseEntity.getAudioUri());
                     }
                     else{
                         return getTTSRawAudioFromWeb(text).flatMap(ttsRawAudio -> {
-                            saveTTSResponseToFileAndDB(text, textHash, ttsRawAudio);
+                            saveTTSResponseToFileAndDB(text, textHash, ttsRawAudio, link);
                             TTSDatabaseEntity ttsResponse = new TTSDatabaseEntity(text, textHash);
                             return Single.just(ttsResponse.getAudioUri());
                         });
@@ -51,10 +49,16 @@ public class TTSRepo{
                 });
     }
 
-    private void saveTTSResponseToFileAndDB(String text, String hash, String ttsRawAudioString){
+    private void saveTTSResponseToFileAndDB(String text, String hash,
+                                            String ttsRawAudioString, String link){
         FileStorage fileStorage = new FileStorage();
         fileStorage.saveStringToFile(hash, ttsRawAudioString);
-        TTSDatabaseEntity ttsDatabaseEntity = new TTSDatabaseEntity(text, hash);
+        TTSDatabaseEntity ttsDatabaseEntity;
+        if(link != null && !link.isEmpty()){
+            ttsDatabaseEntity = new TTSDatabaseEntity(text, hash, link);
+        }else{
+            ttsDatabaseEntity = new TTSDatabaseEntity(text, hash);
+        }
         MyApp.getAppDatabase().ttsDatabaseEntityDao().insert(ttsDatabaseEntity);
     }
 
